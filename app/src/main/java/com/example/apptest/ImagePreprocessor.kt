@@ -2,16 +2,26 @@ package com.example.apptest
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.ImageDecoder
 import android.net.Uri
+import android.os.Build
 
 object ImagePreprocessor {
     fun loadBitmapFromUri(context: Context, imageUri: Uri): Bitmap {
-        val source = ImageDecoder.createSource(context.contentResolver, imageUri)
-        return ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
-            decoder.isMutableRequired = true
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            // Android 9+ (API 28+)
+            val source = ImageDecoder.createSource(context.contentResolver, imageUri)
+            return ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
+                decoder.isMutableRequired = true
+            }
+        } else {
+            // Android 7-8 (API 24-27)
+            val inputStream = context.contentResolver.openInputStream(imageUri)
+            BitmapFactory.decodeStream(inputStream)?.copy(Bitmap.Config.ARGB_8888, true)
+                ?: throw IllegalArgumentException("Failed to load bitmap")
         }
     }
 
