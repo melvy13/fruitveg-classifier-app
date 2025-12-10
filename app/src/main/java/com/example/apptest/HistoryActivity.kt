@@ -57,26 +57,36 @@ fun HistoryScreen(
     val historyList by historyRepository.allHistory.collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
     var selectedHistory by remember { mutableStateOf<ClassificationHistory?>(null) }
+    var showDeleteAllDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Classification History") },
+                title = { Text(if (selectedHistory == null) "Classification History" else "Details") },
                 navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    if (selectedHistory != null) {
+                        IconButton(onClick = { selectedHistory = null }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    } else {
+                        IconButton(onClick = onBackClick) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
                     }
                 },
                 actions = {
-                    if (historyList.isNotEmpty()) {
-                        IconButton(
-                            onClick = {
-                                scope.launch {
-                                    historyRepository.deleteAll()
-                                }
+                    if (selectedHistory == null) {
+                        if (historyList.isNotEmpty()) {
+                            IconButton(
+                                onClick = { showDeleteAllDialog = true }
+                            ) {
+                                Icon(Icons.Default.Delete, contentDescription = "Clear All")
                             }
-                        ) {
-                            Icon(Icons.Default.Delete, contentDescription = "Clear All")
+                        }
+                    } else {
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete")
                         }
                     }
                 }
@@ -86,14 +96,9 @@ fun HistoryScreen(
         if (selectedHistory != null) {
             HistoryDetailView(
                 history = selectedHistory!!,
-                onBackClick = { selectedHistory = null },
-                onDelete = {
-                    scope.launch {
-                        historyRepository.delete(selectedHistory!!)
-                        selectedHistory = null
-                    }
-                },
-                modifier = Modifier.padding(paddingValues)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
             )
         } else {
             if (historyList.isEmpty()) {
@@ -127,6 +132,97 @@ fun HistoryScreen(
             }
         }
     }
+
+    if (showDeleteAllDialog) {
+        BasicAlertDialog(
+            onDismissRequest = { showDeleteAllDialog = false },
+        ) {
+            Surface(
+                modifier = Modifier
+                    .wrapContentWidth()
+                    .wrapContentHeight(),
+                shape = MaterialTheme.shapes.large,
+                tonalElevation = AlertDialogDefaults.TonalElevation
+            ) {
+                Column(modifier = Modifier.padding(24.dp)) {
+                    Text(
+                        text = "Clear All History",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Are you sure you want to delete all classification history?",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = { showDeleteAllDialog = false }) {
+                            Text("Cancel")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        TextButton(
+                            onClick = {
+                                scope.launch { historyRepository.deleteAll() }
+                                showDeleteAllDialog = false
+                            }
+                        ) {
+                            Text("Delete")
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showDeleteDialog && selectedHistory != null) {
+        BasicAlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+        ) {
+            Surface(
+                modifier = Modifier
+                    .wrapContentWidth()
+                    .wrapContentHeight(),
+                shape = MaterialTheme.shapes.large,
+                tonalElevation = AlertDialogDefaults.TonalElevation
+            ) {
+                Column(modifier = Modifier.padding(24.dp)) {
+                    Text(
+                        text = "Delete Entry",
+                        style = MaterialTheme.typography.headlineSmall
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = "Are you sure you want to delete this classification history?",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = { showDeleteDialog = false }) {
+                            Text("Cancel")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        // TODO: FIX - DELETING SINGLE ENTRY GIVES NULL POINTER ERROR
+                        TextButton(
+                            onClick = {
+                                scope.launch { historyRepository.delete(selectedHistory!!) }
+                                selectedHistory = null
+                                showDeleteDialog = false
+                            }
+                        ) {
+                            Text("Delete")
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
@@ -138,7 +234,7 @@ fun HistoryListItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Row(
             modifier = Modifier
@@ -149,13 +245,6 @@ fun HistoryListItem(
             // Image thumbnail
             val imageFile = File(history.imagePath)
             if (imageFile.exists()) {
-//                Image(
-//                    painter = rememberAsyncImagePainter(imageFile),
-//                    contentDescription = "Thumbnail",
-//                    modifier = Modifier
-//                        .size(80.dp),
-//                    contentScale = ContentScale.Crop
-//                )
                 AsyncImage(
                     model = imageFile,
                     contentDescription = "Thumbnail",
@@ -188,7 +277,7 @@ fun HistoryListItem(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Confidence: ${String.format("%.1f%%", history.confidence * 100)}",
+                    text = "Confidence: ${String.format("%.2f", history.confidence * 100)}%",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -207,36 +296,18 @@ fun HistoryListItem(
 @Composable
 fun HistoryDetailView(
     history: ClassificationHistory,
-    onBackClick: () -> Unit,
-    onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var showDeleteDialog by remember { mutableStateOf(false) }
-
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Details") },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showDeleteDialog = true }) {
-                        Icon(Icons.Default.Delete, contentDescription = "Delete")
-                    }
-                }
-            )
-        },
-        modifier = modifier
-    ) { paddingValues ->
+    Surface(
+        modifier = modifier,
+        color = MaterialTheme.colorScheme.background
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(paddingValues)
-                .padding(16.dp)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Image
             val imageFile = File(history.imagePath)
@@ -254,18 +325,26 @@ fun HistoryDetailView(
 
             // Classification info
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
                         text = history.displayName,
                         style = MaterialTheme.typography.headlineSmall
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Confidence: ${String.format("%.2f%%", history.confidence * 100)}",
-                        style = MaterialTheme.typography.bodyLarge
+                        text = "Confidence: ${String.format("%.2f", history.confidence * 100)}%",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
@@ -275,21 +354,26 @@ fun HistoryDetailView(
                     )
                 }
             }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             // Nutrition info
+            // TODO: ADD IN PER 100G SERVING INFO
+
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
                     Text(
                         text = "Nutritional Information",
                         style = MaterialTheme.typography.titleLarge
                     )
-
                     Spacer(modifier = Modifier.height(16.dp))
-
                     Text(
                         text = "Per Serving (${history.servingDescription})",
                         style = MaterialTheme.typography.titleMedium,
@@ -305,50 +389,6 @@ fun HistoryDetailView(
                     NutritionRow("Fiber", "${String.format("%.1f", history.fiber)}g")
                     NutritionRow("Sugar", "${String.format("%.1f", history.sugar)}g")
                     NutritionRow("Vitamin C", "${String.format("%.1f", history.vitaminC)}mg")
-                }
-            }
-        }
-    }
-
-    if (showDeleteDialog) {
-        BasicAlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-        ) {
-            Surface(
-                modifier = Modifier
-                    .wrapContentWidth()
-                    .wrapContentHeight(),
-                shape = MaterialTheme.shapes.large,
-                tonalElevation = AlertDialogDefaults.TonalElevation
-            ) {
-                Column(modifier = Modifier.padding(24.dp)) {
-                    Text(
-                        text = "Delete Entry",
-                        style = MaterialTheme.typography.headlineSmall
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Are you sure you want to delete this classification history?",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End
-                    ) {
-                        TextButton(onClick = { showDeleteDialog = false }) {
-                            Text("Cancel")
-                        }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        TextButton(
-                            onClick = {
-                                showDeleteDialog = false
-                                onDelete()
-                            }
-                        ) {
-                            Text("Delete")
-                        }
-                    }
                 }
             }
         }
