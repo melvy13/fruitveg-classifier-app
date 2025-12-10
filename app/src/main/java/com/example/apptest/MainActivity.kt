@@ -9,16 +9,19 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import com.example.apptest.ui.theme.ApptestTheme
+import com.example.apptest.ui.theme.FruitVegTheme
 import java.io.File
 
 class MainActivity : ComponentActivity() {
@@ -63,7 +66,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            MaterialTheme {
+            FruitVegTheme {
                 HomeScreen(
                     onCameraClick = { checkCameraPermissionAndOpen() },
                     onGalleryClick = { openGallery() },
@@ -124,10 +127,23 @@ fun HomeScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Image(
+                painter = painterResource(id = R.drawable.fnv_icon),
+                contentDescription = "App Icon",
+                modifier = Modifier.size(96.dp)
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             Text(
-                text = "Fruit & Vegetable Classifier",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 48.dp)
+                text = "Fruit & Vegetable NutriScan",
+                style = MaterialTheme.typography.headlineMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 48.dp)
             )
 
             Button(
@@ -150,28 +166,10 @@ fun HomeScreen(
 
             OutlinedButton(
                 onClick = onHistoryClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp)
+                modifier = Modifier.fillMaxWidth().height(56.dp)
             ) {
                 Text("View History")
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    ApptestTheme {
-        Greeting("Android")
     }
 }

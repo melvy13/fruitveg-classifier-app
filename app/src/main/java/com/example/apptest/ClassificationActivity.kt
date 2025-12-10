@@ -18,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.AsyncImage
+import com.example.apptest.ui.theme.FruitVegTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -44,7 +45,7 @@ class ClassificationActivity : ComponentActivity() {
         val imageUri = imageUriString?.let { Uri.parse(it) }
 
         setContent {
-            MaterialTheme {
+            FruitVegTheme {
                 ClassificationScreen(
                     imageUri = imageUri,
                     onClassify = { uri -> classifyImage(uri) },

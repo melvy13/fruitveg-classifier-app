@@ -21,6 +21,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.apptest.ui.theme.FruitVegTheme
 import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
@@ -37,7 +38,7 @@ class HistoryActivity : ComponentActivity() {
         historyRepository = HistoryRepository(database.historyDao())
 
         setContent {
-            MaterialTheme {
+            FruitVegTheme {
                 HistoryScreen(
                     historyRepository = historyRepository,
                     onBackClick = { finish() }
