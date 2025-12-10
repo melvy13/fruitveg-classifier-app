@@ -6,12 +6,16 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -111,6 +115,8 @@ fun ClassificationScreen(
     var isClassifying by remember { mutableStateOf(false) }
     var nutritionDisplay by remember { mutableStateOf<NutritionDisplay?>(null) }
     var savedImagePath by remember { mutableStateOf<String?>(null) }
+    var showPerServing by remember { mutableStateOf(true) }
+    var showPredictions by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val context = androidx.compose.ui.platform.LocalContext.current
     val activity = context as? ComponentActivity
@@ -155,12 +161,6 @@ fun ClassificationScreen(
                     .padding(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
-                    text = "Image Classification",
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.padding(vertical = 16.dp)
-                )
-
                 // Display image
                 if (savedImagePath != null) {
                     val imageFile = File(savedImagePath!!)
@@ -174,64 +174,152 @@ fun ClassificationScreen(
                             contentScale = ContentScale.Fit
                         )
                     }
-
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    // Show results
-                    if (isClassifying) {
+                } else if (imageUri != null && isClassifying) {
+                    Box(
+                        modifier = Modifier
+                            .size(224.dp)
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         CircularProgressIndicator()
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("Classifying...")
-                    } else if (classificationResult != null) {
-                        Card(
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Show results
+                if (isClassifying) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Classifying...")
+                } else if (classificationResult != null && nutritionDisplay != null) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                    ) {
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Column(
-                                modifier = Modifier.padding(16.dp)
+                            Text(
+                                text = nutritionDisplay!!.displayName,
+                                style = MaterialTheme.typography.headlineSmall
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Confidence: ${
+                                    String.format(
+                                        "%.2f",
+                                        classificationResult!!.confidence * 100
+                                    )
+                                }%",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        FilterChip(
+                            selected = showPerServing,
+                            onClick = { showPerServing = true },
+                            label = { Text("Per Serving") },
+                            modifier = Modifier.weight(1f)
+                        )
+                        FilterChip(
+                            selected = !showPerServing,
+                            onClick = { showPerServing = false },
+                            label = { Text("Per 100g") },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    NutritionCard(
+                        nutritionDisplay = nutritionDisplay!!,
+                        showPerServing = showPerServing
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .clickable { showPredictions = !showPredictions },
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Result: ${classificationResult!!.label}",
-                                    style = MaterialTheme.typography.headlineSmall
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "Confidence: ${String.format("%.2f%%", classificationResult!!.confidence * 100)}",
-                                    style = MaterialTheme.typography.bodyLarge
-                                )
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Text(
-                                    text = "Top 5 Predictions:",
+                                    text = "Top 5 Predictions",
                                     style = MaterialTheme.typography.titleMedium
                                 )
-                                Spacer(modifier = Modifier.height(8.dp))
+                                Icon(
+                                    imageVector = if (showPredictions)
+                                        Icons.Default.KeyboardArrowUp
+                                    else
+                                        Icons.Default.KeyboardArrowDown,
+                                    contentDescription = if (showPredictions) "Collapse" else "Expand"
+                                )
+                            }
 
+                            if (showPredictions) {
+                                Spacer(modifier = Modifier.height(16.dp))
+                                HorizontalDivider()
+                                Spacer(modifier = Modifier.height(12.dp))
                                 classificationResult!!.allProbabilities
                                     .sortedByDescending { it.second }
                                     .take(5)
                                     .forEach { (label, prob) ->
-                                        Text(
-                                            text = "$label: ${String.format("%.2f%%", prob * 100)}",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            modifier = Modifier.padding(vertical = 2.dp)
-                                        )
+                                        val displayName =
+                                            nutritionRepository.getNutritionDisplay(label)?.displayName
+                                                ?: label
+                                        Row(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 6.dp),
+                                            horizontalArrangement = Arrangement.SpaceBetween
+                                        ) {
+                                            Text(
+                                                text = displayName,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                modifier = Modifier.weight(1f)
+                                            )
+                                            Text(
+                                                text = "${String.format("%.2f", prob * 100)}%",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     }
                             }
                         }
-
-                        if (nutritionDisplay != null) {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            NutritionCard(nutritionDisplay = nutritionDisplay!!)
-                        }
-                    } else {
-                        Text(
-                            text = "No image selected",
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(16.dp)
-                        )
                     }
+                } else {
+                    Text(
+                        text = "No image selected",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(16.dp)
+                    )
                 }
             }
         }
@@ -260,7 +348,13 @@ private suspend fun saveImageToInternalStorage(context: Context, uri: Uri): Stri
 }
 
 @Composable
-fun NutritionCard(nutritionDisplay: NutritionDisplay) {
+fun NutritionCard(
+    nutritionDisplay: NutritionDisplay,
+    showPerServing: Boolean
+) {
+    val nutritionValues = if (showPerServing) nutritionDisplay.perServing else nutritionDisplay.per100g
+    val title = if (showPerServing) "Per Serving (${nutritionDisplay.servingDescription})" else "Per 100g"
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -276,40 +370,20 @@ fun NutritionCard(nutritionDisplay: NutritionDisplay) {
             )
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = "Per Serving (${nutritionDisplay.servingDescription})",
+                text = title,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(8.dp))
 
-            NutritionRow("Calories", "${String.format("%.0f", nutritionDisplay.perServing.calories)} kcal")
-            NutritionRow("Water", "${String.format("%.1f", nutritionDisplay.perServing.water)}g")
-            NutritionRow("Protein", "${String.format("%.1f", nutritionDisplay.perServing.protein)}g")
-            NutritionRow("Fat", "${String.format("%.1f", nutritionDisplay.perServing.fat)}g")
-            NutritionRow("Total Carbs", "${String.format("%.1f", nutritionDisplay.perServing.totalCarbs)}g")
-            NutritionRow("Fiber", "${String.format("%.1f", nutritionDisplay.perServing.fiber)}g")
-            NutritionRow("Sugar", "${String.format("%.1f", nutritionDisplay.perServing.sugar)}g")
-            NutritionRow("Vitamin C", "${String.format("%.1f", nutritionDisplay.perServing.vitaminC)}mg")
-
-            Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = "Per 100g",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-
-            NutritionRow("Calories", "${String.format("%.0f", nutritionDisplay.per100g.calories)} kcal")
-            NutritionRow("Water", "${String.format("%.1f", nutritionDisplay.per100g.water)}g")
-            NutritionRow("Protein", "${String.format("%.1f", nutritionDisplay.per100g.protein)}g")
-            NutritionRow("Fat", "${String.format("%.1f", nutritionDisplay.per100g.fat)}g")
-            NutritionRow("Total Carbs", "${String.format("%.1f", nutritionDisplay.per100g.totalCarbs)}g")
-            NutritionRow("Fiber", "${String.format("%.1f", nutritionDisplay.per100g.fiber)}g")
-            NutritionRow("Sugar", "${String.format("%.1f", nutritionDisplay.per100g.sugar)}g")
-            NutritionRow("Vitamin C", "${String.format("%.1f", nutritionDisplay.per100g.vitaminC)}mg")
+            NutritionRow("Calories", "${String.format("%.0f", nutritionValues.calories)} kcal")
+            NutritionRow("Water", "${String.format("%.1f", nutritionValues.water)}g")
+            NutritionRow("Protein", "${String.format("%.1f", nutritionValues.protein)}g")
+            NutritionRow("Fat", "${String.format("%.1f", nutritionValues.fat)}g")
+            NutritionRow("Total Carbs", "${String.format("%.1f", nutritionValues.totalCarbs)}g")
+            NutritionRow("Fiber", "${String.format("%.1f", nutritionValues.fiber)}g")
+            NutritionRow("Sugar", "${String.format("%.1f", nutritionValues.sugar)}g")
+            NutritionRow("Vitamin C", "${String.format("%.1f", nutritionValues.vitaminC)}mg")
         }
     }
 }
