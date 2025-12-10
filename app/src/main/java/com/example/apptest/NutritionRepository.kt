@@ -31,14 +31,14 @@ class NutritionRepository(private val context: Context) {
                     displayName = itemJson.getString("displayName"),
                     servingSize = ServingSize(
                         amount = servingSizeJson.getInt("amount"),
-                        unit = servingSizeJson.getString("unit"),
                         description = servingSizeJson.getString("description")
                     ),
                     nutritionPer100g = NutritionValues(
                         calories = nutritionJson.getDouble("calories"),
+                        water = nutritionJson.getDouble("water"),
                         protein = nutritionJson.getDouble("protein"),
                         fat = nutritionJson.getDouble("fat"),
-                        carbs = nutritionJson.getDouble("carbs"),
+                        totalCarbs = nutritionJson.getDouble("totalCarbs"),
                         fiber = nutritionJson.getDouble("fiber"),
                         sugar = nutritionJson.getDouble("sugar"),
                         vitaminC = nutritionJson.getDouble("vitaminC")

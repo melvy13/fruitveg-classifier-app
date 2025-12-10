@@ -78,9 +78,10 @@ class ClassificationActivity : ComponentActivity() {
                     imagePath = imagePath,
                     timestamp = System.currentTimeMillis(),
                     calories = nutrition.perServing.calories,
+                    water = nutrition.perServing.water,
                     protein = nutrition.perServing.protein,
                     fat = nutrition.perServing.fat,
-                    carbs = nutrition.perServing.carbs,
+                    totalCarbs = nutrition.perServing.totalCarbs,
                     fiber = nutrition.perServing.fiber,
                     sugar = nutrition.perServing.sugar,
                     vitaminC = nutrition.perServing.vitaminC,
@@ -281,9 +282,10 @@ fun NutritionCard(nutritionDisplay: NutritionDisplay) {
             Spacer(modifier = Modifier.height(8.dp))
 
             NutritionRow("Calories", "${String.format("%.0f", nutritionDisplay.perServing.calories)} kcal")
+            NutritionRow("Water", "${String.format("%.1f", nutritionDisplay.perServing.water)}g")
             NutritionRow("Protein", "${String.format("%.1f", nutritionDisplay.perServing.protein)}g")
             NutritionRow("Fat", "${String.format("%.1f", nutritionDisplay.perServing.fat)}g")
-            NutritionRow("Carbs", "${String.format("%.1f", nutritionDisplay.perServing.carbs)}g")
+            NutritionRow("Total Carbs", "${String.format("%.1f", nutritionDisplay.perServing.totalCarbs)}g")
             NutritionRow("Fiber", "${String.format("%.1f", nutritionDisplay.perServing.fiber)}g")
             NutritionRow("Sugar", "${String.format("%.1f", nutritionDisplay.perServing.sugar)}g")
             NutritionRow("Vitamin C", "${String.format("%.1f", nutritionDisplay.perServing.vitaminC)}mg")
@@ -300,9 +302,10 @@ fun NutritionCard(nutritionDisplay: NutritionDisplay) {
             Spacer(modifier = Modifier.height(8.dp))
 
             NutritionRow("Calories", "${String.format("%.0f", nutritionDisplay.per100g.calories)} kcal")
+            NutritionRow("Water", "${String.format("%.1f", nutritionDisplay.per100g.water)}g")
             NutritionRow("Protein", "${String.format("%.1f", nutritionDisplay.per100g.protein)}g")
             NutritionRow("Fat", "${String.format("%.1f", nutritionDisplay.per100g.fat)}g")
-            NutritionRow("Carbs", "${String.format("%.1f", nutritionDisplay.per100g.carbs)}g")
+            NutritionRow("Total Carbs", "${String.format("%.1f", nutritionDisplay.per100g.totalCarbs)}g")
             NutritionRow("Fiber", "${String.format("%.1f", nutritionDisplay.per100g.fiber)}g")
             NutritionRow("Sugar", "${String.format("%.1f", nutritionDisplay.per100g.sugar)}g")
             NutritionRow("Vitamin C", "${String.format("%.1f", nutritionDisplay.per100g.vitaminC)}mg")

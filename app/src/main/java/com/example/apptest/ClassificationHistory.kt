@@ -13,9 +13,10 @@ data class ClassificationHistory(
     val timestamp: Long,
 
     val calories: Double,
+    val water: Double,
     val protein: Double,
     val fat: Double,
-    val carbs: Double,
+    val totalCarbs: Double,
     val fiber: Double,
     val sugar: Double,
     val vitaminC: Double,

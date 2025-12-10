@@ -3,7 +3,6 @@ package com.example.apptest
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
@@ -22,7 +21,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import coil.compose.rememberAsyncImagePainter
 import kotlinx.coroutines.launch
 import java.io.File
 import java.text.SimpleDateFormat
@@ -299,9 +297,10 @@ fun HistoryDetailView(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     NutritionRow("Calories", "${String.format("%.0f", history.calories)} kcal")
+                    NutritionRow("Water", "${String.format("%.1f", history.water)}g")
                     NutritionRow("Protein", "${String.format("%.1f", history.protein)}g")
                     NutritionRow("Fat", "${String.format("%.1f", history.fat)}g")
-                    NutritionRow("Carbs", "${String.format("%.1f", history.carbs)}g")
+                    NutritionRow("Total Carbs", "${String.format("%.1f", history.totalCarbs)}g")
                     NutritionRow("Fiber", "${String.format("%.1f", history.fiber)}g")
                     NutritionRow("Sugar", "${String.format("%.1f", history.sugar)}g")
                     NutritionRow("Vitamin C", "${String.format("%.1f", history.vitaminC)}mg")
