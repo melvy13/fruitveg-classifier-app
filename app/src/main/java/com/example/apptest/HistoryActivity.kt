@@ -178,6 +178,8 @@ fun HistoryScreen(
     }
 
     if (showDeleteDialog && selectedHistory != null) {
+        val historyToDelete = selectedHistory
+
         BasicAlertDialog(
             onDismissRequest = { showDeleteDialog = false },
         ) {
@@ -207,13 +209,13 @@ fun HistoryScreen(
                             Text("Cancel")
                         }
                         Spacer(modifier = Modifier.width(8.dp))
-
-                        // TODO: FIX - DELETING SINGLE ENTRY GIVES NULL POINTER ERROR
                         TextButton(
                             onClick = {
-                                scope.launch { historyRepository.delete(selectedHistory!!) }
-                                selectedHistory = null
                                 showDeleteDialog = false
+                                selectedHistory = null
+                                scope.launch {
+                                    historyToDelete?.let { historyRepository.delete(it) }
+                                }
                             }
                         ) {
                             Text("Delete")
