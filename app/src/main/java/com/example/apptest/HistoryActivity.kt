@@ -13,6 +13,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -59,6 +61,8 @@ fun HistoryScreen(
     var selectedHistory by remember { mutableStateOf<ClassificationHistory?>(null) }
     var showDeleteAllDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val nutritionRepository = remember { NutritionRepository(context) }
 
     Scaffold(
         topBar = {
@@ -96,6 +100,7 @@ fun HistoryScreen(
         if (selectedHistory != null) {
             HistoryDetailView(
                 history = selectedHistory!!,
+                nutritionRepository = nutritionRepository,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
@@ -298,8 +303,12 @@ fun HistoryListItem(
 @Composable
 fun HistoryDetailView(
     history: ClassificationHistory,
+    nutritionRepository: NutritionRepository,
     modifier: Modifier = Modifier
 ) {
+    var showPerServing by remember { mutableStateOf(true) }
+    var showPredictions by remember { mutableStateOf(false) }
+
     Surface(
         modifier = modifier,
         color = MaterialTheme.colorScheme.background
@@ -360,7 +369,53 @@ fun HistoryDetailView(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Nutrition info
-            // TODO: ADD IN PER 100G SERVING INFO
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                FilterChip(
+                    selected = showPerServing,
+                    onClick = { showPerServing = true },
+                    label = { Text("Per Serving") },
+                    modifier = Modifier.weight(1f)
+                )
+                FilterChip(
+                    selected = !showPerServing,
+                    onClick = { showPerServing = false },
+                    label = { Text("Per 100g") },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val nutritionValues = if (showPerServing) {
+                NutritionValues(
+                    calories = history.caloriesPerServing,
+                    water = history.waterPerServing,
+                    protein = history.proteinPerServing,
+                    fat = history.fatPerServing,
+                    totalCarbs = history.totalCarbsPerServing,
+                    fiber = history.fiberPerServing,
+                    sugar = history.sugarPerServing,
+                    vitaminC = history.vitaminCPerServing
+                )
+            } else {
+                NutritionValues(
+                    calories = history.caloriesPer100g,
+                    water = history.waterPer100g,
+                    protein = history.proteinPer100g,
+                    fat = history.fatPer100g,
+                    totalCarbs = history.totalCarbsPer100g,
+                    fiber = history.fiberPer100g,
+                    sugar = history.sugarPer100g,
+                    vitaminC = history.vitaminCPer100g
+                )
+            }
+
+            val title = if (showPerServing) "Per Serving (${history.servingDescription})" else "Per 100g"
 
             Card(
                 modifier = Modifier
@@ -377,20 +432,84 @@ fun HistoryDetailView(
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Per Serving (${history.servingDescription})",
+                        text = title,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
                     Spacer(modifier = Modifier.height(8.dp))
 
-                    NutritionRow("Calories", "${String.format("%.0f", history.calories)} kcal")
-                    NutritionRow("Water", "${String.format("%.1f", history.water)}g")
-                    NutritionRow("Protein", "${String.format("%.1f", history.protein)}g")
-                    NutritionRow("Fat", "${String.format("%.1f", history.fat)}g")
-                    NutritionRow("Total Carbs", "${String.format("%.1f", history.totalCarbs)}g")
-                    NutritionRow("Fiber", "${String.format("%.1f", history.fiber)}g")
-                    NutritionRow("Sugar", "${String.format("%.1f", history.sugar)}g")
-                    NutritionRow("Vitamin C", "${String.format("%.1f", history.vitaminC)}mg")
+                    NutritionRow("Calories", "${String.format("%.0f", nutritionValues.calories)} kcal")
+                    NutritionRow("Water", "${String.format("%.1f", nutritionValues.water)}g")
+                    NutritionRow("Protein", "${String.format("%.1f", nutritionValues.protein)}g")
+                    NutritionRow("Fat", "${String.format("%.1f", nutritionValues.fat)}g")
+                    NutritionRow("Total Carbs", "${String.format("%.1f", nutritionValues.totalCarbs)}g")
+                    NutritionRow("Fiber", "${String.format("%.1f", nutritionValues.fiber)}g")
+                    NutritionRow("Sugar", "${String.format("%.1f", nutritionValues.sugar)}g")
+                    NutritionRow("Vitamin C", "${String.format("%.1f", nutritionValues.vitaminC)}mg")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val predictions = parseTopPredictions(history.topPredictions)
+            if (predictions.isNotEmpty()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .clickable { showPredictions = !showPredictions },
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Top 5 Predictions",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Icon(
+                                imageVector = if (showPredictions)
+                                    Icons.Default.KeyboardArrowUp
+                                else
+                                    Icons.Default.KeyboardArrowDown,
+                                contentDescription = if (showPredictions) "Collapse" else "Expand"
+                            )
+                        }
+
+                        if (showPredictions) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            HorizontalDivider()
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            predictions.forEach { (label, prob) ->
+                                val displayName =
+                                    nutritionRepository.getNutritionDisplay(label)?.displayName
+                                        ?: label
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 6.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = displayName,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    Text(
+                                        text = "${String.format("%.2f", prob * 100)}%",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -402,4 +521,17 @@ fun formatTimestamp(timestamp: Long): String {
     return sdf.format(Date(timestamp))
 }
 
-
+fun parseTopPredictions(predictionsString: String): List<Pair<String, Float>> {
+    return try {
+        predictionsString.split(",").mapNotNull { entry ->
+            val parts = entry.split(":")
+            if (parts.size == 2) {
+                val label = parts[0]
+                val confidence = parts[1].toFloatOrNull()
+                if (confidence != null) label to confidence else null
+            } else null
+        }
+    } catch (e: Exception) {
+        emptyList()
+    }
+}

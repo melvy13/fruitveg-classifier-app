@@ -76,21 +76,38 @@ class ClassificationActivity : ComponentActivity() {
     ) {
         withContext(Dispatchers.IO) {
             if (nutrition != null) {
+                val topPredictionsString = result.allProbabilities
+                    .sortedByDescending { it.second }
+                    .take(5)
+                    .joinToString(",") { "${it.first}:${it.second}" }
+
                 val history = ClassificationHistory(
                     label = result.label,
                     displayName = nutrition.displayName,
                     confidence = result.confidence,
                     imagePath = imagePath,
                     timestamp = System.currentTimeMillis(),
-                    calories = nutrition.perServing.calories,
-                    water = nutrition.perServing.water,
-                    protein = nutrition.perServing.protein,
-                    fat = nutrition.perServing.fat,
-                    totalCarbs = nutrition.perServing.totalCarbs,
-                    fiber = nutrition.perServing.fiber,
-                    sugar = nutrition.perServing.sugar,
-                    vitaminC = nutrition.perServing.vitaminC,
-                    servingDescription = nutrition.servingDescription
+                    servingDescription = nutrition.servingDescription,
+
+                    caloriesPerServing = nutrition.perServing.calories,
+                    waterPerServing = nutrition.perServing.water,
+                    proteinPerServing = nutrition.perServing.protein,
+                    fatPerServing = nutrition.perServing.fat,
+                    totalCarbsPerServing = nutrition.perServing.totalCarbs,
+                    fiberPerServing = nutrition.perServing.fiber,
+                    sugarPerServing = nutrition.perServing.sugar,
+                    vitaminCPerServing = nutrition.perServing.vitaminC,
+
+                    caloriesPer100g = nutrition.per100g.calories,
+                    waterPer100g = nutrition.per100g.water,
+                    proteinPer100g = nutrition.per100g.protein,
+                    fatPer100g = nutrition.per100g.fat,
+                    totalCarbsPer100g = nutrition.per100g.totalCarbs,
+                    fiberPer100g = nutrition.per100g.fiber,
+                    sugarPer100g = nutrition.per100g.sugar,
+                    vitaminCPer100g = nutrition.per100g.vitaminC,
+
+                    topPredictions = topPredictionsString
                 )
                 historyRepository.insert(history)
             }
@@ -128,7 +145,13 @@ fun ClassificationScreen(
             savedImagePath = saveImageToInternalStorage(context, imageUri)
             val result = onClassify(imageUri)
             classificationResult = result
+
+            val startTime = System.nanoTime()
             nutritionDisplay = nutritionRepository.getNutritionDisplay(result.label)
+            val endTime = System.nanoTime()
+            val inferenceTime = (endTime - startTime) / 1_000_000
+            android.util.Log.d("Performance", "Obtaining nutrition data took: $inferenceTime ms")
+
             if (savedImagePath != null) {
                 onSaveHistory(result, nutritionDisplay, savedImagePath!!)
             }
