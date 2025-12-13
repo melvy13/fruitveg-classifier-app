@@ -140,23 +140,29 @@ fun ClassificationScreen(
 
     // Automatically classify when screen loads
     LaunchedEffect(imageUri) {
+        val startTime = System.nanoTime()
         if (imageUri != null && classificationResult == null) {
             isClassifying = true
             savedImagePath = saveImageToInternalStorage(context, imageUri)
             val result = onClassify(imageUri)
             classificationResult = result
 
-            val startTime = System.nanoTime()
+            val startTime2 = System.nanoTime()
             nutritionDisplay = nutritionRepository.getNutritionDisplay(result.label)
-            val endTime = System.nanoTime()
-            val inferenceTime = (endTime - startTime) / 1_000_000
-            android.util.Log.d("Performance", "Obtaining nutrition data took: $inferenceTime ms")
+            val endTime2 = System.nanoTime()
+            val nutritionDisplayTime = (endTime2 - startTime2) / 1e6
+            android.util.Log.d("Performance",
+                "Obtaining nutrition data took: %.3f ms".format(nutritionDisplayTime))
 
             if (savedImagePath != null) {
                 onSaveHistory(result, nutritionDisplay, savedImagePath!!)
             }
             isClassifying = false
         }
+        val endTime = System.nanoTime()
+        val classificationTime = (endTime - startTime) / 1e6
+        android.util.Log.d("Performance",
+            "Entire classification process took: %.3f ms".format(classificationTime))
     }
 
     Scaffold(
